@@ -1,0 +1,299 @@
+from pathlib import Path
+from pathlib import PurePath
+import shutil
+from pathlib import *
+from stat import *
+
+def paths_under_consideration() -> list:
+    '''
+     Function that takes in no parameters and requires an input, which then
+    lists all of the paths that are in that directory
+    
+    '''
+    stage1 = True
+
+    main_file_list = []
+    
+    while stage1:
+        
+        try:
+
+            ai_input_action = input()
+
+            ai_input_directory = Path((ai_input_action.split()[1].strip()))
+
+            if ai_input_directory.exists() == False:
+                print("ERROR")
+                continue
+
+            if ai_input_directory.exists() == True:
+
+                if "D " in ai_input_action:
+                    main_file_list = function_D(ai_input_directory)
+                    for printed_version in main_file_list:
+                        print(printed_version)
+                    stage1 = False
+                    return main_file_list
+            
+                if "R " in ai_input_action:
+                    main_file_list = function_R(ai_input_directory)
+                    for printed_version in main_file_list:
+                        print(printed_version)
+                    stage1 = False
+                    return main_file_list
+
+        except:
+            print("ERROR")
+            
+
+def interesting_files(list_of_paths:list) -> list:
+    '''
+    Specifies which files to determine as "interesting" from the paths_under_consideration() funciton
+    '''
+
+    interesting_files = []   
+
+    stage2 = True
+
+    while stage2:
+        
+        try:
+
+            input_list = ["A", "< ", "> ", "N ", "E ", "T "]
+            
+            ai_input_action2 = input(str())
+            
+            ai_input_letter_space = ai_input_action2[0:2]
+
+            if ai_input_letter_space not in input_list:
+                print("ERROR")
+                continue
+
+            if ai_input_letter_space in input_list:
+
+                if "A" in ai_input_action2:
+                    for files in list_of_paths:
+                        interesting_files.append(files)
+                        stage2 = False
+
+                if "N " in ai_input_action2:
+                    for files in function_N(list_of_paths, ai_input_action2.split()[1]):
+                        interesting_files.append(files)
+                        stage2 = False
+
+                if "E " in ai_input_action2:
+                    for files in function_E(list_of_paths, ai_input_action2.split()[1]):
+                        interesting_files.append(files)
+                        stage2 = False
+
+                if "T " in ai_input_action2:
+                    for files in function_T(list_of_paths, str(ai_input_action2[2:].strip())):
+                        interesting_files.append(files)
+                        stage2 = False
+
+                if "< " in ai_input_action2:
+                    for files in function_smaller(list_of_paths, int(ai_input_action2.split()[1])):
+                        interesting_files.append(files)
+                        stage2 = False
+                    
+                if "> " in ai_input_action2:
+                    for files in function_bigger(list_of_paths, int(ai_input_action2.split()[1])):
+                        interesting_files.append(files)
+                        stage2 = False
+
+                for files in interesting_files:
+                    print(files)
+
+            return interesting_files
+
+        except IndexError:
+            print("ERROR")
+            continue
+
+
+def action_on_files(list_of_paths: list) -> Path:
+    '''
+    Takes action on a list of files that were specified as intersting from the intersting_files() function
+    '''
+
+    if list_of_paths == []:
+        return ""
+    
+    stage3 = True
+
+    while stage3:
+
+        try:
+
+            input_list = ["F", "D", "T"]
+
+            ai_input_action3 = input(str())
+            
+            ai_input_letter = ai_input_action3.split()[0]
+
+            if ai_input_letter not in input_list:
+                print("ERROR")
+                continue
+
+            if ai_input_letter in input_list:
+
+                if "F" in ai_input_action3:
+                    function_F(list_of_paths)
+                    stage3 = False
+
+                if "D" in ai_input_action3:
+                    return(function_D_copy(list_of_paths))
+                    stage3 = False
+
+                if "T" in ai_input_action3:
+                    return(function_timestamp(list_of_paths))
+                    stage3 = False
+
+
+        except IndexError:
+            print("ERROR")
+            continue
+         
+def function_D (directory:Path) -> list:
+    '''Function that takes in a path and returns back all the 
+    files under that directory only in a list.'''
+
+    file_list = []
+
+    if directory.exists() == True:
+        for file in directory.iterdir():
+            if file.is_file() == True:
+                file_list.append(file)
+
+    return(file_list)   
+
+def function_R(directory:Path) -> list:
+    '''
+    Function that takes in a Path and returns back all the files under that
+    directory and all subdirectories in a list
+    '''
+    file_list = []
+    directory_list = []
+    final_list = []
+
+    if directory.exists() == True:
+        for files in directory.iterdir():
+            if files.is_file() == True:
+                file_list.append(files)
+                file_list.sort()
+            elif files.is_dir() == True:
+                directory_list.extend(function_R(files))
+                directory_list.sort()
+            final_list = file_list + directory_list
+            
+    return final_list
+ 
+def function_N(list_of_paths:list, file_name:str) -> list:
+    '''
+    Searches for interesting files by file name
+    '''
+    file_list = []
+    
+    for paths in list_of_paths:
+        if paths.name == file_name:
+            file_list.append(paths)
+
+    return file_list
+
+def function_E(list_of_paths:list, extension:str) -> list:
+    '''
+    Searches interesting files by extension
+    '''
+
+    file_list = []
+
+    for file_extensions in list_of_paths:
+        if file_extensions.suffix == extension or file_extensions.suffix == ('.'+extension):
+            file_list.append(file_extensions)
+            
+    return file_list
+
+def function_T(list_of_paths:list, file_text:str) -> list:
+    '''
+    Searches interesting files by text content
+    '''
+
+    file_list = []
+    
+    for file in list_of_paths:
+        try:
+            open_file = open(file, 'r')
+            text = open_file.read()
+            open_file.close()
+            if file_text in text:
+                file_list.append(file)
+
+        except UnicodeDecodeError:
+            pass
+
+    return file_list
+
+
+def function_smaller(list_of_paths:list, byte:int) -> list:
+    '''
+    Searches for interesting files by byte size
+    '''
+
+    file_list = []
+
+    for files in list_of_paths:
+        if files.stat().st_size < byte:
+            file_list.append(files)
+
+    return file_list
+
+def function_bigger(list_of_paths:list, byte:int) -> list:
+    '''
+    Searches for interesting files by byte size
+    '''
+
+    file_list = []
+
+    for files in list_of_paths:
+        if files.stat().st_size > byte:
+            file_list.append(files)
+
+    return file_list
+
+def function_F(list_of_paths: list) -> list:
+    '''
+    Prints the first line of the file
+    '''
+    for file in list_of_paths:
+        try:
+            path_file = open(file, 'r')
+            first_line = path_file.readline().strip()
+            path_file.close()
+            print(first_line)
+
+        except UnicodeDecodeError:
+            print("NOT TEXT")
+
+            
+
+def function_D_copy(list_of_paths: list) -> Path:
+    '''
+    Makes a duplicate copy of the file and stores it in the same directory
+    as the original
+    '''
+
+    for copy in list_of_paths:
+        shutil.copy(Path(str(copy)), Path(str(copy) + '.dup'))
+
+
+def function_timestamp(list_of_paths: list) -> Path:
+    '''
+    Modifies the timestamp to be the current date/time
+    '''
+    for time in list_of_paths:
+        touch = time.touch(exist_ok = True)
+        
+    return ""
+            
+if __name__ == '__main__':
+    action_on_files(interesting_files(paths_under_consideration()))
